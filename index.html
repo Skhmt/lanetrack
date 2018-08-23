@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Lane tracker</title>
+	<link 
+		rel="stylesheet" 
+		href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+		integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+		crossorigin=""/>
+	<script 
+		src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+		integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+		crossorigin="">
+	</script>
+	<script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+	<style>
+		#hawaiimap { height: 800px; }
+	</style>
+</head>
+<body>
+	<div id="hawaiimap"></div>
+
+	<!-- Attribution -->
+	<div>
+			Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.
+	</div>
+	
+	<script>
+		const layer = new L.StamenTileLayer('terrain'); // 'toner' or 'terrain' or 'watercolor
+		const map = new L.Map('hawaiimap', {  
+			center: new L.LatLng(17.95, -157.42),
+			zoom: 5,
+		});
+		map.addLayer(layer);
+
+		ucar();
+
+		// http://hurricanes.ral.ucar.edu/realtime/plots/northeastpacific/2018/ep142018/
+		function ucar() {
+			const dataURL = 'http://hurricanes.ral.ucar.edu/realtime/plots/northeastpacific/2018/ep142018/bep142018.dat';
+			const oReq = new XMLHttpRequest();
+			oReq.addEventListener('load', reqListener);
+			oReq.open('GET', 'https://cors.io/?' + dataURL);
+			oReq.send();
+
+			function reqListener() {
+				const lines = this.responseText.split('\n');
+				const latlngs = [];
+
+				for (let line of lines) {
+					if (line.length === 215) {
+						const lat = line.substring(35,37).trim() + '.' + line.substring(37,38).trim();
+						const long = '-' + line.substring(41,44).trim() + '.' + line.substring(44, 45).trim();
+						
+						const fLat = parseFloat(lat);
+						const fLong = parseFloat(long);
+
+						latlngs.push([fLat, fLong]);
+						L.marker([fLat, fLong], {
+							title: line.substring(8,18),
+						}).addTo(map);
+					}
+				}
+
+				L.polyline(latlngs, {
+					color: 'blue',
+					smoothFactor: 0,
+				}).addTo(map);
+			}
+		}
+		
+	</script>
+</body>
+</html>
