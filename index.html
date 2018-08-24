@@ -34,17 +34,54 @@
 		});
 		map.addLayer(layer);
 
-		ucar();
+		//ucar();
+
+		wisc();
+
+		// http://tropic.ssec.wisc.edu/real-time/adt/14E-list.txt
+		function wisc() {
+			const dataURL = 'http://tropic.ssec.wisc.edu/real-time/adt/14E-list.txt';
+			let lastMarker;
+
+			getData(dataURL, function () {
+				const lines = this.responseText.split('\n');
+				const latlngs = [];
+
+				for (let line of lines) {
+					if (line.length >= 150 && line.substring(0,2) == '20') {
+						const lat = line.substring(114,120).trim();
+						const long = '-' + line.substring(122,128).trim();
+						
+						const fLat = parseFloat(lat);
+						const fLong = parseFloat(long);
+
+						const date = line.substring(0,9);
+						const hrs = line.substring(10,12);
+						const min = line.substring(12,14);
+
+						const time = new Date(date + ' ' + hrs + ':' + min + ' UTC');
+
+						latlngs.push([fLat, fLong]);
+						lastMarker = L.marker([fLat, fLong], {
+							title: time.toLocaleString(),
+						});
+					}
+				}
+
+				L.polyline(latlngs, {
+					color: 'red',
+					smoothFactor: 0,
+				}).addTo(map);
+
+				lastMarker.addTo(map);
+			});
+		}
 
 		// http://hurricanes.ral.ucar.edu/realtime/plots/northeastpacific/2018/ep142018/
 		function ucar() {
 			const dataURL = 'http://hurricanes.ral.ucar.edu/realtime/plots/northeastpacific/2018/ep142018/bep142018.dat';
-			const oReq = new XMLHttpRequest();
-			oReq.addEventListener('load', reqListener);
-			oReq.open('GET', 'https://cors.io/?' + dataURL);
-			oReq.send();
-
-			function reqListener() {
+			
+			getData(dataURL, function () {
 				const lines = this.responseText.split('\n');
 				const latlngs = [];
 
@@ -67,7 +104,14 @@
 					color: 'blue',
 					smoothFactor: 0,
 				}).addTo(map);
-			}
+			});
+		}
+
+		function getData(url, callback) {
+			const oReq = new XMLHttpRequest();
+			oReq.addEventListener('load', callback);
+			oReq.open('GET', 'https://cors.io/?' + url);
+			oReq.send();
 		}
 		
 	</script>
